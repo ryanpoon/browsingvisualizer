@@ -5,7 +5,7 @@
 // Listen for tab updates to track page loads
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     chrome.storage.local.get({active: false}, (data) => {
-        console.log(data.active);
+        // console.log(data.active);
         if (data.active && changeInfo.status === 'complete' && tab.url.startsWith('http')) {
             chrome.scripting.executeScript({
                 target: { tabId },
@@ -18,6 +18,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // Listen for messages from content.js to store visit data
 chrome.runtime.onMessage.addListener((message, sender) => {
     if (message.type === 'VISIT_DATA') {
+        console.log("Received url:", message.url);
         chrome.storage.local.get({history: []}, (data) => {
             const updatedHistory = [...data.history, message];
             chrome.storage.local.set({ history: updatedHistory });
