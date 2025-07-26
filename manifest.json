@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Chrome Browsing Visualizer",
     "version": "1.0",
-    "permissions": ["history", "tabs", "activeTab", "scripting", "storage", "webNavigation"],
+    "permissions": ["history", "tabs", "activeTab", "scripting", "storage", "webNavigation", "unlimitedStorage"],
     "background": {
         "service_worker": "background.js"
     },

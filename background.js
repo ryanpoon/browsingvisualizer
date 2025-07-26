@@ -4,12 +4,15 @@
 
 // Listen for tab updates to track page loads
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url.startsWith('http')) {
-        chrome.scripting.executeScript({
-            target: { tabId },
-            files: ['content.js']
-        });
-    }
+    chrome.storage.local.get({active: false}, (data) => {
+        console.log(data.active);
+        if (data.active && changeInfo.status === 'complete' && tab.url.startsWith('http')) {
+            chrome.scripting.executeScript({
+                target: { tabId },
+                files: ['content.js']
+            });
+        }
+    });
 });
 
 // Listen for messages from content.js to store visit data
