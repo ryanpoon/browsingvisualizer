@@ -48,3 +48,14 @@
 .floating-controls button:hover {
     background-color: #f0f0f0;
 }
+
+#graphtitle {
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    font-size: 24px;
+    margin: 20px 0;
+}
+
+#popup-controls * {
+    font-family: 'Courier New', Courier, monospace;
+}

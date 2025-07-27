@@ -23,15 +23,36 @@ document.getElementById("start").addEventListener("click", () => {
         });
         console.log(updatedHistory);
         chrome.storage.local.set({ history: updatedHistory });
+        document.getElementById("count").textContent = `Pages Tracked: ${updatedHistory.length}`;
         alert("History cleared!");
     });
     chrome.storage.local.set({ active: true }, () => {
         console.log("tracking active");
+        document.getElementById("start").disabled = true;
+        document.getElementById("end").disabled = false;
     });
+    
 });
 
 document.getElementById("end").addEventListener("click", () => {
     chrome.storage.local.set({ active: false }, () => {
         console.log("tracking ended");
+        document.getElementById("start").disabled = false;
+        document.getElementById("end").disabled = true;
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    // get the current history count
+    chrome.storage.local.get(["history"], function(result) {
+        const history = result.history || [];
+        document.getElementById("count").textContent = `Pages Tracked: ${history.length}`;
+    });
+
+    // get the current active state
+    chrome.storage.local.get(["active"], function(result) {
+        const active = result.active || false;
+        document.getElementById("start").disabled = active;
+        document.getElementById("end").disabled = !active;
     });
 });

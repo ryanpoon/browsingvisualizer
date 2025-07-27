@@ -1,7 +1,7 @@
 // visualization/visualization.js
 // This script runs in the visualization page to display the browsing history
 
-// convert timestamp to human-readable time ago
+// convert timestamp to human-readable time ago (thanks chatgpt)
 function timeAgo(timestamp) {
     const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
     const now = Date.now();
@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'text-wrap': 'wrap',
                         'text-valign': 'top',
                         'text-halign': 'center',
+                        'text-margin-y': -10
                     }
                 }
             ]
@@ -184,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tooltip.style.left = `${evt.originalEvent.pageX + 10}px`;
                 tooltip.style.top = `${evt.originalEvent.pageY + 10}px`;
             }
-            
         });
 
         // Handle node clicks to open URLs
@@ -211,8 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             layout.run();
         });
-
-
     });  
 });
 
