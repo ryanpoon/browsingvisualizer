@@ -23,3 +23,28 @@
     max-width: 400px;
     max-height: 250px;
 }
+
+.floating-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.floating-controls button {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+}
+
+.floating-controls button:hover {
+    background-color: #f0f0f0;
+}

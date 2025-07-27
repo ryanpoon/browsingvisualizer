@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <link rel="stylesheet" href="../styles.css">
     <title>Data Visualization</title>
     <script src="../lib/cytoscape.min.js"></script>
@@ -10,6 +11,10 @@
 </head>
 <body>
     <h1>Tracked Data</h1>
-    <div id="cy"></div>
+    <div id="cy">
+        <div id="cy-controls" class="floating-controls">
+            <button id="zoom-reset">⟳</button>
+        </div>
+    </div>
 </body>
 </html>

@@ -1,6 +1,32 @@
 // visualization/visualization.js
 // This script runs in the visualization page to display the browsing history
 
+// convert timestamp to human-readable time ago
+function timeAgo(timestamp) {
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    const now = Date.now();
+    const diff = now - timestamp;
+
+    const units = [
+        { unit: 'year',   ms: 1000 * 60 * 60 * 24 * 365 },
+        { unit: 'month',  ms: 1000 * 60 * 60 * 24 * 30 },
+        { unit: 'week',   ms: 1000 * 60 * 60 * 24 * 7 },
+        { unit: 'day',    ms: 1000 * 60 * 60 * 24 },
+        { unit: 'hour',   ms: 1000 * 60 * 60 },
+        { unit: 'minute', ms: 1000 * 60 },
+        { unit: 'second', ms: 1000 },
+    ];
+
+    for (let { unit, ms } of units) {
+        const delta = Math.floor(diff / ms);
+        if (Math.abs(delta) >= 1) {
+            return rtf.format(-delta, unit); // negative because timestamp is in the past
+        }
+    }
+
+    return 'just now';
+}
+
 
 // extract nodes and edges from history
 function extractGraph(history) {
@@ -25,7 +51,15 @@ function extractGraph(history) {
             nodeSet.add(entry.url);
         }
         if (entry.referrer) {
-            edges.push({ data: { source: entry.referrer, target: entry.url } });
+            edges.push(
+                { data: 
+                    { 
+                        source: entry.referrer, 
+                        target: entry.url, 
+                        timestamp: timeAgo(entry.timestamp)
+                    } 
+                }
+            );
             if (!nodeSet.has(entry.referrer)) {
                 nodes.push({ data: { id: entry.referrer, label: entry.referrer } });
                 nodeSet.add(entry.referrer);
@@ -50,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements: graph,
             layout: {
                 name: 'dagre',
+                edgeSep: 50, 
                 directed: true,
                 rankDir: 'LR',
                 nodeDimensionsIncludeLabels: true,
@@ -100,11 +135,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 {
                     selector: 'edge',
                     style: {
-                    'width': 5,
-                    'line-color': '#41d16f',
-                    'target-arrow-shape': 'triangle',
-                    'target-arrow-color': '#41d16f',
-                    'curve-style': 'bezier'
+                        'width': 5,
+                        'line-color': '#41d16f',
+                        'target-arrow-shape': 'triangle',
+                        'target-arrow-color': '#41d16f',
+                        'curve-style': 'bezier',
+                        'label': 'data(timestamp)',
+                        'font-family': nodeFont,
+                        'font-size': '5px',
+                        'text-wrap': 'wrap',
+                        'text-valign': 'top',
+                        'text-halign': 'center',
                     }
                 }
             ]
@@ -146,13 +187,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
         });
 
+        // Handle node clicks to open URLs
         cy.on('tap', 'node', function(evt) {
             const node = evt.target;
-            const url = node.data('id'); // assuming the node id is the URL
+            const url = node.data('id'); 
             if (url) {
                 window.open(url, '_blank');
             }
         });
 
+        // Add zoom reset button
+        document.getElementById('zoom-reset').addEventListener('click', () => {
+            const layout = cy.layout({
+                name: 'dagre',
+                edgeSep: 50, 
+                directed: true,
+                rankDir: 'LR',
+                nodeDimensionsIncludeLabels: true,
+                spacingFactor: 1.0,
+                fit: true,
+                animate: true,
+                animationDuration: 200
+            });
+            layout.run();
+        });
+
+
     });  
 });
+
