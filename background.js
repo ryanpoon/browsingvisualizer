@@ -15,15 +15,22 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     });
 });
 
-// Listen for messages from content.js to store visit data
+// Listen for messages from content.js to store visit data and screenshot the
+// current page
 chrome.runtime.onMessage.addListener((message, sender) => {
-    if (message.type === 'VISIT_DATA') {
-        console.log("Received url:", message.url);
-        chrome.storage.local.get({history: []}, (data) => {
-            const updatedHistory = [...data.history, message];
-            chrome.storage.local.set({ history: updatedHistory });
-        });
-    }
+    chrome.storage.local.get({active: false}, (data) => {
+        if (data.active && message.type === 'VISIT_DATA') {
+            console.log("Received url:", message.url);
+            chrome.tabs.captureVisibleTab(null, { format: "png" }, function(dataUrl) {
+                message.screenshot = dataUrl; // add screenshot to message
+                console.log("Captured screenshot for:", message.url);
+                chrome.storage.local.get({history: []}, (data) => {
+                    const updatedHistory = [...data.history, message];
+                    chrome.storage.local.set({ history: updatedHistory });
+                });
+            });            
+        }
+    });
 });
 
 // Listen for changes in the active state to update the icon
@@ -55,6 +62,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         updateIcon(changes.active.newValue);
     }
 });
+
+
+
+
 
 // potential todo: track tab movement, for now just worry about page loads
 // chrome.tabs.onActivated.addListener(function(activeInfo) {

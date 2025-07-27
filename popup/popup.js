@@ -17,6 +17,7 @@ document.getElementById("start").addEventListener("click", () => {
             const message = {
                 type: 'VISIT_DATA',
                 url: tab.url,
+                title: tab.title,
                 referrer: '',
                 timestamp: Date.now()
             };
