@@ -1,6 +1,4 @@
 // popup.js
-// TODOS: when starting, track current open tabs
-// and store them in history before tracking new tabs
 
 // just links to the visualization page
 document.getElementById("open").addEventListener("click", () => {
