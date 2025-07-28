@@ -13,7 +13,8 @@ function sendVisitData() {
         url: window.location.href,
         referrer: document.referrer,
         title: document.title,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        favicon: document.querySelector("link[rel*='icon']") ? document.querySelector("link[rel*='icon']").href : null,
     });
 
     hasSentVisit = true;
@@ -93,7 +94,8 @@ const checkUrlChange = () => {
                 url: location.href,
                 referrer: lastUrl,
                 title: document.title,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                favicon: document.querySelector("link[rel*='icon']") ? document.querySelector("link[rel*='icon']").href : null,
             });
         });
         lastUrl = location.href;
