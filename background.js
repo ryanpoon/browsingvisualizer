@@ -15,13 +15,40 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     });
 });
 
+// Function to capture a screenshot of the current tab
+function tryCaptureScreenshot(retries = 5, delay = 300, callback) {
+    chrome.tabs.captureVisibleTab(null, { format: "png" }, function (dataUrl) {
+        if (chrome.runtime.lastError) {
+            console.warn("Retrying screenshot:", chrome.runtime.lastError.message);
+            if (retries > 0) {
+                setTimeout(() => {
+                    tryCaptureScreenshot(retries - 1, delay, callback);
+                }, delay);
+            } else {
+                console.error("Failed to capture screenshot after retries:", chrome.runtime.lastError.message);
+                callback(null); 
+            }
+        } else {
+            callback(dataUrl);
+        }
+    });
+}
+
+
 // Listen for messages from content.js to store visit data and screenshot the
 // current page
 chrome.runtime.onMessage.addListener((message, sender) => {
     chrome.storage.local.get({active: false}, (data) => {
+        if (message.type === 'IS_TAB_ACTIVE') {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                const isActiveTab = tabs.length && sender.tab && tabs[0].id === sender.tab.id;
+                sendResponse({ active: data.active && isActiveTab });
+            });
+            return true; 
+        }
         if (data.active && message.type === 'VISIT_DATA') {
             console.log("Received url:", message.url);
-            chrome.tabs.captureVisibleTab(null, { format: "png" }, function(dataUrl) {
+            tryCaptureScreenshot(5, 300, function (dataUrl) {
                 message.screenshot = dataUrl; // add screenshot to message
                 console.log("Captured screenshot for:", message.url, dataUrl);
                 chrome.storage.local.get({history: []}, (data) => {

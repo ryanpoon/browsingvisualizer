@@ -11,15 +11,18 @@ document.getElementById("start").addEventListener("click", () => {
     chrome.tabs.query({}, function(tabs) {
         let updatedHistory = [];
         tabs.forEach(tab => {
-            console.log(`Tracking tab: ${tab.url}`);
-            const message = {
-                type: 'VISIT_DATA',
-                url: tab.url,
-                title: tab.title,
-                referrer: '',
-                timestamp: Date.now()
-            };
-            updatedHistory.push(message);
+            if (tab.url.startsWith('http')) {
+                console.log(`Tracking tab: ${tab.url}`);
+                const message = {
+                    type: 'VISIT_DATA',
+                    url: tab.url,
+                    title: tab.title,
+                    referrer: '',
+                    timestamp: Date.now(),
+                    favicon: tab.favIconUrl || null
+                };
+                updatedHistory.push(message);
+            }
         });
         console.log(updatedHistory);
         chrome.storage.local.set({ history: updatedHistory });

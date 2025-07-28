@@ -1,11 +1,14 @@
 // visualization/visualization.js
 // This script runs in the visualization page to display the browsing history
 
+// TODO add sliding control for time, store timestamps for nodes and edges
+
 // convert timestamp to human-readable time ago (thanks chatgpt)
 function timeAgo(timestamp) {
-    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
     const now = Date.now();
-    const diff = now - timestamp;
+    let diff = now - timestamp;
+    const isPast = diff >= 0;
+    diff = Math.abs(diff);
 
     const units = [
         { unit: 'year',   ms: 1000 * 60 * 60 * 24 * 365 },
@@ -17,15 +20,38 @@ function timeAgo(timestamp) {
         { unit: 'second', ms: 1000 },
     ];
 
-    for (let { unit, ms } of units) {
+    let result = [];
+
+    for (let i = 0; i < units.length; i++) {
+        const { unit, ms } = units[i];
         const delta = Math.floor(diff / ms);
-        if (Math.abs(delta) >= 1) {
-            return rtf.format(-delta, unit); // negative because timestamp is in the past
+        if (delta >= 1) {
+            result.push(`${delta} ${unit}${delta !== 1 ? 's' : ''}`);
+            diff -= delta * ms;
+
+            // Try to get one more smaller unit
+            for (let j = i + 1; j < units.length; j++) {
+                const nextDelta = Math.floor(diff / units[j].ms);
+                if (nextDelta >= 1) {
+                    result.push(`${nextDelta} ${units[j].unit}${nextDelta !== 1 ? 's' : ''}`);
+                }
+                break;
+            }
+
+            break;
         }
     }
 
-    return 'just now';
+    if (result.length === 0) {
+        return 'just now';
+    }
+
+    return isPast
+        ? result.join(' ') + ' ago'
+        : 'in ' + result.join(' ');
 }
+
+
 
 
 // extract nodes and edges from history
@@ -36,8 +62,8 @@ function extractGraph(history) {
 
     history.forEach(entry => {
         // resolve fragment identifiers
-        entry.url = entry.url.split('#')[0]
-        entry.referrer = entry.referrer.split('#')[0]
+        entry.url = entry.url.split('#')[0];
+        entry.referrer = entry.referrer.split('#')[0];
         if (!nodeSet.has(entry.url)) {
             nodes.push(
                 { data: 
@@ -45,10 +71,17 @@ function extractGraph(history) {
                         id: entry.url, 
                         label: entry.title, 
                         screenshot: entry.screenshot, 
+                        favicon: entry.favicon,
                     } 
                 }
             );
             nodeSet.add(entry.url);
+        } else {
+            // if the node already exists, update the screenshot if it has one
+            const existingNode = nodes.find(node => node.data.id === entry.url);
+            if (entry.screenshot && !existingNode.data.screenshot) {
+                existingNode.data.screenshot = entry.screenshot; 
+            }
         }
         if (entry.referrer) {
             edges.push(
@@ -73,6 +106,9 @@ const nodeFont = "Menlo";
 
 // load the graph visualization
 document.addEventListener('DOMContentLoaded', () => {
+    const spinner = document.getElementById('loading-spinner');
+    spinner.style.display = 'block'; 
+
     chrome.storage.local.get(["history"], function(result) {
         const data = result || [];
         graph = extractGraph(data.history)
@@ -88,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 directed: true,
                 rankDir: 'LR',
                 nodeDimensionsIncludeLabels: true,
-                spacingFactor: 1.0,
+                spacingFactor: 1.1,
                 fit: true
             },
             style: [
@@ -114,7 +150,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 {
-                    selector: 'node[!screenshot]',
+                    selector: 'node[!screenshot][favicon]',
+                    style: {
+                        'background-image': 'data(favicon)',
+                        'background-fit': 'cover',
+                        'background-color': 'transparent',
+                        'shape': 'ellipse',
+                        'width': '40px',
+                        'height': '40px',
+                        'label': 'data(label)',
+                        'color': '#222',
+                        'font-family': nodeFont,
+                        'font-size': '10px',
+                        'text-wrap': 'wrap',
+                        'text-max-width': '180px',
+                        'text-valign': 'bottom',
+                        'text-halign': 'center',
+                        'text-margin-y': '5px',
+                        'border-width': 0
+                    }
+                },
+                {
+                    selector: 'node[!screenshot][!favicon]',
                     style: {
                         'background-color': '#1fa848',
                         'shape': 'triangle',
@@ -136,9 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     selector: 'edge',
                     style: {
                         'width': 5,
-                        'line-color': '#41d16f',
+                        'line-color': '#41c7d1',
                         'target-arrow-shape': 'triangle',
-                        'target-arrow-color': '#41d16f',
+                        'target-arrow-color': '#41c7d1',
                         'curve-style': 'bezier',
                         'label': 'data(timestamp)',
                         'font-family': nodeFont,
@@ -151,6 +208,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             ]
         });
+
+        cy.ready(() => {
+            spinner.style.display = 'none';
+        });
+
         // Add tooltips for nodes
         const tooltip = document.createElement('div');
         tooltip.id = 'cy-tooltip'; 
