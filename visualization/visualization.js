@@ -59,48 +59,71 @@ function extractGraph(history) {
     const nodes = [];
     const edges = [];
     const nodeSet = new Set();
+    const clickedTargetsFromSearch = new Set();
 
+    // First pass: Collect all nodes
     history.forEach(entry => {
-        // Resolve fragment identifiers
+        if (entry.type === "search_click") return;
         entry.url = entry.url.split('#')[0];
         entry.referrer = entry.referrer.split('#')[0];
         if (!nodeSet.has(entry.url)) {
-            nodes.push(
-                { data: 
-                    { 
-                        id: entry.url, 
-                        label: entry.title, 
-                        screenshot: entry.screenshot, 
-                        favicon: entry.favicon,
-                    } 
+            nodes.push({
+                data: {
+                    id: entry.url,
+                    label: entry.title,
+                    screenshot: entry.screenshot,
+                    favicon: entry.favicon
                 }
-            );
+            });
             nodeSet.add(entry.url);
         } else {
-            // If the node already exists, update the screenshot if it has one
             const existingNode = nodes.find(node => node.data.id === entry.url);
             if (entry.screenshot && !existingNode.data.screenshot) {
-                existingNode.data.screenshot = entry.screenshot; 
+                existingNode.data.screenshot = entry.screenshot;
             }
         }
-        if (entry.referrer) {
-            edges.push(
-                { data: 
-                    { 
-                        source: entry.referrer, 
-                        target: entry.url, 
-                        timestamp: timeAgo(entry.timestamp)
-                    } 
-                }
-            );
-            if (!nodeSet.has(entry.referrer)) {
-                nodes.push({ data: { id: entry.referrer, label: entry.referrer } });
-                nodeSet.add(entry.referrer);
-            }
+
+        if (entry.referrer && !nodeSet.has(entry.referrer)) {
+            nodes.push({ data: { id: entry.referrer, label: entry.referrer } });
+            nodeSet.add(entry.referrer);
         }
     });
+
+    // Second pass: Collect only valid edges
+    history.forEach(entry => {
+        const source = entry.referrer?.split('#')[0];
+        const target = entry.url?.split('#')[0];
+        const isFromGoogleRoot = source && source.startsWith("https://www.google.");
+        const isOverwritten = clickedTargetsFromSearch.has(target) && isFromGoogleRoot;
+
+        if (entry.type === "search_click") {
+            if (nodeSet.has(entry.referrer) && nodeSet.has(entry.url)) {
+                edges.push({
+                    data: {
+                        source: entry.referrer,
+                        target: entry.url,
+                        timestamp: timeAgo(entry.timestamp),
+                    }
+                });
+                clickedTargetsFromSearch.add(entry.url);
+            }
+            return;
+        }
+
+        if (!isOverwritten && source && target && nodeSet.has(source) && nodeSet.has(target)) {
+            edges.push({
+                data: {
+                    source: source,
+                    target: target,
+                    timestamp: timeAgo(entry.timestamp)
+                }
+            });
+        }
+    });
+
     return [...nodes, ...edges];
 }
+
 
 const nodeFont = "Menlo"; 
 
@@ -113,7 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = result || [];
         graph = extractGraph(data.history)
         console.log("Graph data:", graph);
-        console.log(JSON.stringify(data.history, null, 2));
+        const historyWithoutScreenshots = data.history.map(({ screenshot, ...rest }) => rest);
+        console.log(JSON.stringify(historyWithoutScreenshots, null, 2));
         cytoscape.use(cytoscapeDagre);
         const cy = cytoscape({
             container: document.getElementById('cy'),

@@ -53,12 +53,18 @@ function checkAndSendVisit() {
 
 checkAndSendVisit();
 
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        checkAndSendVisit();  // attempt sending again when the tab is seen
+    }
+});
+
+
 // For handling SPAs...
 let lastUrl = location.href;
 
-// Wait for the page to fully load in before sending visit data
+// Function to wait for the page to settle before sending data
 function waitForPageToSettle(callback, maxWait = 5000, settleDelay = 300) {
-    let timeout;
     let lastChange = Date.now();
     const observer = new MutationObserver(() => {
         lastChange = Date.now();
@@ -71,35 +77,58 @@ function waitForPageToSettle(callback, maxWait = 5000, settleDelay = 300) {
         characterData: true
     });
 
+    const start = Date.now();
+
     function check() {
         const now = Date.now();
         if (now - lastChange >= settleDelay || now - start >= maxWait) {
             observer.disconnect();
             callback();
         } else {
-            timeout = setTimeout(check, 100);
+            setTimeout(check, 100);
         }
     }
 
-    const start = Date.now();
     check();
 }
+
 
 // Check for URL changes and send visit data when it changes
 const checkUrlChange = () => {
     if (location.href !== lastUrl) {
+        const newUrl = location.href;
+        const referrer = lastUrl;
+
         waitForPageToSettle(() => {
             chrome.runtime.sendMessage({
                 type: 'VISIT_DATA',
-                url: location.href,
-                referrer: lastUrl,
+                url: newUrl,
+                referrer: referrer,
                 title: document.title,
                 timestamp: Date.now(),
-                favicon: document.querySelector("link[rel*='icon']") ? document.querySelector("link[rel*='icon']").href : null,
+                favicon: document.querySelector("link[rel*='icon']")?.href || null,
             });
         });
-        lastUrl = location.href;
+
+        lastUrl = newUrl;
     }
 };
 
+
 setInterval(checkUrlChange, 200); // every 200ms (for the short form content degens)
+
+
+// Google search specific handling
+if (location.hostname.includes("google.") && location.pathname === "/search") {
+    document.addEventListener("click", (e) => {
+        const link = e.target.closest("a");
+        if (!link || !link.href.startsWith("http")) return;
+        chrome.runtime.sendMessage({
+            type: "SEARCH_CLICK",
+            searchUrl: location.href,
+            targetUrl: link.href,
+            timestamp: Date.now(),
+        });
+    }, true); 
+}
+

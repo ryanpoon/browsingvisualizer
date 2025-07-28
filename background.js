@@ -46,6 +46,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'VISIT_DATA') {
         handleVisitData(message);
     }
+
+    if (message.type === "SEARCH_CLICK") {
+        const entry = {
+            type: "search_click",
+            url: message.targetUrl,
+            referrer: message.searchUrl,
+        };
+        chrome.storage.local.get({ history: [] }, (data) => {
+            const updatedHistory = [...data.history, entry];
+            chrome.storage.local.set({ history: updatedHistory });
+        });
+}
 });
 
 async function handleIsTabActive(message, sender, sendResponse) {
