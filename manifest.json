@@ -20,5 +20,18 @@
             "matches": ["<all_urls>"]
         }
     ],
-    "host_permissions": ["<all_urls>"]
+    "host_permissions": [
+        "http://*/*",
+        "https://*/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": ["content.js"],
+            "run_at": "document_idle"
+        }
+    ]
 }

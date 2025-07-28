@@ -3,7 +3,7 @@
 
 // TODO add sliding control for time, store timestamps for nodes and edges
 
-// convert timestamp to human-readable time ago (thanks chatgpt)
+// Convert timestamp to human-readable time ago (thanks chatgpt)
 function timeAgo(timestamp) {
     const now = Date.now();
     let diff = now - timestamp;
@@ -54,14 +54,14 @@ function timeAgo(timestamp) {
 
 
 
-// extract nodes and edges from history
+// Extract nodes and edges from history
 function extractGraph(history) {
     const nodes = [];
     const edges = [];
     const nodeSet = new Set();
 
     history.forEach(entry => {
-        // resolve fragment identifiers
+        // Resolve fragment identifiers
         entry.url = entry.url.split('#')[0];
         entry.referrer = entry.referrer.split('#')[0];
         if (!nodeSet.has(entry.url)) {
@@ -77,7 +77,7 @@ function extractGraph(history) {
             );
             nodeSet.add(entry.url);
         } else {
-            // if the node already exists, update the screenshot if it has one
+            // If the node already exists, update the screenshot if it has one
             const existingNode = nodes.find(node => node.data.id === entry.url);
             if (entry.screenshot && !existingNode.data.screenshot) {
                 existingNode.data.screenshot = entry.screenshot; 
@@ -104,7 +104,7 @@ function extractGraph(history) {
 
 const nodeFont = "Menlo"; 
 
-// load the graph visualization
+// Load the graph visualization
 document.addEventListener('DOMContentLoaded', () => {
     const spinner = document.getElementById('loading-spinner');
     spinner.style.display = 'block'; 

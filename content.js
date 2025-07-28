@@ -19,24 +19,43 @@ function sendVisitData() {
     hasSentVisit = true;
 }
 
-// check if this tab is active
-chrome.runtime.sendMessage({ type: 'IS_TAB_ACTIVE' }, (response) => {
-    if (response && response.active) {
-        sendVisitData();
-    } else {
-        // wait for tab to become active before sending data
-        document.addEventListener('visibilitychange', () => {
-            if (!hasSentVisit && document.visibilityState === 'visible') {
-                sendVisitData();
-            }
-        });
-    }
-});
+// Check if this tab is active
+function checkAndSendVisit() {
+    console.log("Checking if tab is active...");
+    setTimeout(() => {
+        try {
+            chrome.runtime.sendMessage({ type: 'IS_TAB_ACTIVE' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.warn("Message failed:", chrome.runtime.lastError.message);
+                    return;
+                }
 
-// for handling SPAs...
+                if (response && response.active) {
+                    if (document.visibilityState === 'visible') {
+                        sendVisitData();
+                    } else {
+                        const onVisible = () => {
+                            if (document.visibilityState === 'visible') {
+                                sendVisitData();
+                                document.removeEventListener('visibilitychange', onVisible);
+                            }
+                        };
+                        document.addEventListener('visibilitychange', onVisible);
+                    }
+                }
+            });
+        } catch (err) {
+            console.error("Error sending message:", err);
+        }
+    }, 100);  // small delay to let service worker initialize
+}
+
+checkAndSendVisit();
+
+// For handling SPAs...
 let lastUrl = location.href;
 
-// wait for the page to fully load in before sending visit data
+// Wait for the page to fully load in before sending visit data
 function waitForPageToSettle(callback, maxWait = 5000, settleDelay = 300) {
     let timeout;
     let lastChange = Date.now();
@@ -65,7 +84,7 @@ function waitForPageToSettle(callback, maxWait = 5000, settleDelay = 300) {
     check();
 }
 
-
+// Check for URL changes and send visit data when it changes
 const checkUrlChange = () => {
     if (location.href !== lastUrl) {
         waitForPageToSettle(() => {
